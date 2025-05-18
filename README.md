@@ -1,2 +1,2084 @@
-# MapMates
-Website made for CodeCircuit Hackathon
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MapMates - Premium Place Recommendations</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --primary-color: #0f0f0f;
+            --secondary-color: #1a2980;
+            --accent-color: #4776E6;
+            --text-color: #ffffff;
+            --text-secondary: #e0e0e0;
+            --glass-bg: rgba(15, 15, 15, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --shadow-blue: 0 5px 15px rgba(71, 118, 230, 0.3);
+            --shadow-dark: 0 8px 20px rgba(0, 0, 0, 0.25);
+            --gradient-blue: linear-gradient(135deg, #1a2980 0%, #4776E6 100%);
+            --neomorphic-light: 5px 5px 10px rgba(0, 0, 0, 0.3), -5px -5px 10px rgba(30, 30, 30, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        body {
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+
+        .container {
+            width: 100%;
+            height: 100vh;
+            overflow-y: auto;
+            scroll-snap-type: y mandatory;
+            position: relative;
+        }
+
+        .homepage, .map-section {
+            height: 100vh;
+            scroll-snap-align: start;
+            position: relative;
+        }
+
+        .homepage {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-container {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+            animation: logoFloat 6s ease-in-out infinite;
+            vertical-align: middle;
+        }
+
+        .title-text {
+            background: var(--gradient-blue);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 4.5rem;
+            vertical-align: middle;
+        }
+
+        .homepage h1 {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1rem;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease forwards 0.2s;
+            position: relative;
+            z-index: 10;
+        }
+
+        .homepage p {
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin-bottom: 2.5rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease forwards 0.4s;
+            position: relative;
+            z-index: 10;
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 2.5rem;
+            margin: 2.5rem 0;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease forwards 0.6s;
+            position: relative;
+            z-index: 10;
+        }
+
+        .stat-box {
+            background: rgba(25, 25, 25, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 1.5rem;
+            width: 180px;
+            text-align: center;
+            box-shadow: var(--neomorphic-light);
+            transition: transform 0.4s, box-shadow 0.4s;
+        }
+
+        .stat-box:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-blue);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            background: var(--gradient-blue);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        .begin-btn {
+            display: inline-block;
+            background: var(--gradient-blue);
+            color: white;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: var(--shadow-blue);
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease forwards 0.8s;
+            position: relative;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        .begin-btn:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.4s ease;
+            z-index: -1;
+        }
+
+        .begin-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(71, 118, 230, 0.4);
+        }
+
+        .begin-btn:hover:before {
+            width: 100%;
+        }
+
+        .begin-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Enhanced Animated background for homepage */
+        .animated-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .animated-gradient {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background: radial-gradient(circle at center, rgba(71, 118, 230, 0.08) 0%, rgba(15, 15, 15, 0) 70%);
+            animation: rotate 35s linear infinite;
+        }
+
+        .nebula {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxmaWx0ZXIgaWQ9Im5vaXNlIj4KICAgIDxmZVR1cmJ1bGVuY2UgdHlwZT0iZnJhY3RhbE5vaXNlIiBiYXNlRnJlcXVlbmN5PSIwLjAxIiBudW1PY3RhdmVzPSI0IiBzdGl0Y2hUaWxlcz0ic3RpdGNoIiByZXN1bHQ9Im5vaXNlIi8+CiAgICA8ZmVTcGVjdWxhckxpZ2h0aW5nIHN1cmZhY2VTY2FsZT0iNSIgc3BlY3VsYXJDb25zdGFudD0iMC44IiBzcGVjdWxhckV4cG9uZW50PSIyMCIgbGlnaHRpbmctY29sb3I9IiM0Nzc2RTYiIHJlc3VsdD0ic3BlY09mZnNldCI+CiAgICAgIDxmZVBvaW50TGlnaHQgeD0iMCIgeT0iMCIgej0iMTAwIiAvPgogICAgPC9mZVNwZWN1bGFyTGlnaHRpbmc+CiAgICA8ZmVDb21wb3NpdGUgaW4yPSJzcGVjT2Zmc2V0IiBpbj0ibm9pc2UiIG9wZXJhdG9yPSJhcml0aG1ldGljIiBrMT0iMCIgazI9IjAuMSIgazM9IjAuOCIgazQ9IjAiIHJlc3VsdD0ibWl4ZWQiIC8+CiAgICA8ZmVCbGVuZCBpbj0ibWl4ZWQiIGluMj0iU291cmNlR3JhcGhpYyIgbW9kZT0ibXVsdGlwbHkiIC8+CiAgPC9maWx0ZXI+CiAgPHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI25vaXNlKSIgb3BhY2l0eT0iMC4wOSIvPgo8L3N2Zz4=') repeat;
+            opacity: 0.3;
+            mix-blend-mode: screen;
+            animation: nebulaPulse 15s ease-in-out infinite alternate;
+        }
+
+        .particles-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 2;
+        }
+
+        .particle {
+            position: absolute;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            opacity: 0;
+            animation: particleFloat linear infinite;
+        }
+
+        .shape {
+            position: absolute;
+            opacity: 0.15;
+            filter: blur(5px);
+            z-index: 3;
+        }
+
+        .shape-1 {
+            top: 20%;
+            left: 10%;
+            width: 80px;
+            height: 80px;
+            border-radius: 40% 60% 70% 30% / 40% 50% 50% 60%;
+            background: var(--accent-color);
+            animation: float 12s ease-in-out infinite alternate;
+        }
+
+        .shape-2 {
+            top: 60%;
+            right: 10%;
+            width: 100px;
+            height: 100px;
+            border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+            background: var(--secondary-color);
+            animation: float 16s ease-in-out infinite alternate-reverse;
+        }
+
+        .shape-3 {
+            bottom: 20%;
+            left: 25%;
+            width: 120px;
+            height: 120px;
+            border-radius: 50% 50% 70% 30% / 30% 50% 50% 70%;
+            background: var(--accent-color);
+            animation: float 14s ease-in-out infinite alternate;
+        }
+
+        .shape-4 {
+            top: 30%;
+            right: 25%;
+            width: 70px;
+            height: 70px;
+            border-radius: 30% 70% 50% 50% / 50% 30% 70% 50%;
+            background: var(--secondary-color);
+            animation: float 18s ease-in-out infinite alternate-reverse;
+        }
+
+        .shape-5 {
+            top: 15%;
+            right: 45%;
+            width: 60px;
+            height: 60px;
+            border-radius: 40% 60% 30% 70% / 40% 40% 60% 60%;
+            background: var(--accent-color);
+            animation: float 20s ease-in-out infinite alternate;
+        }
+
+        .shape-6 {
+            bottom: 15%;
+            right: 20%;
+            width: 90px;
+            height: 90px;
+            border-radius: 60% 40% 60% 40% / 40% 60% 40% 60%;
+            background: var(--secondary-color);
+            animation: float 17s ease-in-out infinite alternate-reverse;
+        }
+
+        .shape-7 {
+            top: 45%;
+            left: 15%;
+            width: 50px;
+            height: 50px;
+            border-radius: 30% 70% 70% 30% / 50% 50% 50% 50%;
+            background: var(--accent-color);
+            animation: float 15s ease-in-out infinite alternate;
+        }
+
+        .glow {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(71, 118, 230, 0.15) 0%, rgba(15, 15, 15, 0) 70%);
+            animation: pulse 8s ease-in-out infinite alternate;
+        }
+
+        .glow-1 {
+            top: 20%;
+            left: 30%;
+            animation-delay: 0s;
+        }
+
+        .glow-2 {
+            bottom: 30%;
+            right: 20%;
+            width: 400px;
+            height: 400px;
+            animation-delay: 2s;
+        }
+
+        .glow-3 {
+            top: 60%;
+            left: 10%;
+            width: 250px;
+            height: 250px;
+            animation-delay: 4s;
+        }
+
+        .lines {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0.1;
+            overflow: hidden;
+        }
+
+        .line {
+            position: absolute;
+            height: 1px;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            animation: lineSweep 15s linear infinite;
+            opacity: 0;
+        }
+
+        .line-1 {
+            top: 20%;
+            animation-delay: 0s;
+        }
+
+        .line-2 {
+            top: 40%;
+            animation-delay: 3s;
+        }
+
+        .line-3 {
+            top: 60%;
+            animation-delay: 6s;
+        }
+
+        .line-4 {
+            top: 80%;
+            animation-delay: 9s;
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+            animation: fadeIn 1s ease forwards 1.2s;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .scroll-text {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .scroll-arrow {
+            width: 30px;
+            height: 30px;
+            border: 2px solid var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: pulse 2s infinite;
+        }
+
+        .scroll-arrow:after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border-right: 2px solid var(--accent-color);
+            border-bottom: 2px solid var(--accent-color);
+            transform: rotate(45deg) translateY(-2px);
+        }
+
+        .map-section {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 0;
+        }
+
+        #map-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            transition: opacity 0.5s ease;
+        }
+
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: var(--secondary-color);
+            box-shadow: var(--shadow-blue);
+        }
+
+        .control-btn.active {
+            background: var(--accent-color);
+        }
+
+        .pulse-effect {
+            animation: btnPulse 0.3s ease-out;
+        }
+
+        @keyframes btnPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .sidebar {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-left: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            gap: 5px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 10px;
+        }
+
+        .tab {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .tab.active {
+            background: rgba(71, 118, 230, 0.2);
+            color: var(--text-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .filter-container {
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-title {
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .filter-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-chip {
+            background: rgba(71, 118, 230, 0.1);
+            border: 1px solid rgba(71, 118, 230, 0.2);
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-chip.active {
+            background: var(--secondary-color);
+            border-color: var(--accent-color);
+        }
+
+        .filter-chip:hover {
+            background: rgba(71, 118, 230, 0.2);
+        }
+
+        .recommendations-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .rec-card {
+            background: rgba(25, 25, 25, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+            box-shadow: var(--neomorphic-light);
+        }
+
+        .rec-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-blue);
+        }
+
+        .rec-card.selected {
+            border: 2px solid var(--accent-color);
+            box-shadow: 0 0 15px rgba(71, 118, 230, 0.4);
+        }
+
+        .rec-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.8rem;
+        }
+
+        .rec-title {
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .rec-category {
+            display: inline-block;
+            background: rgba(71, 118, 230, 0.2);
+            padding: 0.3rem 0.7rem;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .rec-rating {
+            display: flex;
+            justify-content: flex-end;
+            color: #FFD700;
+            font-size: 0.9rem;
+        }
+
+        .rec-details {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            margin-bottom: 0.8rem;
+        }
+
+        .rec-source {
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            text-align: right;
+            font-style: italic;
+        }
+
+        .collection-item {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(25, 25, 25, 0.4);
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            margin-bottom: 0.8rem;
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .collection-item:hover {
+            background: rgba(71, 118, 230, 0.1);
+        }
+
+        .collection-title {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .collection-count {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .create-collection-btn {
+            background: var(--gradient-blue);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: var(--shadow-blue);
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            display: block;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .create-collection-btn:hover {
+            box-shadow: 0 7px 20px rgba(71, 118, 230, 0.4);
+        }
+
+        .ai-rec-card {
+            background: rgba(25, 25, 25, 0.4);
+            border: 1px solid rgba(71, 118, 230, 0.2);
+            border-radius: 15px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: var(--neomorphic-light);
+        }
+
+        .ai-rec-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-blue);
+        }
+
+        .ai-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #7303c0, #ec38bc);
+            color: white;
+            padding: 0.3rem 0.7rem;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.8rem;
+        }
+
+        .ai-reason {
+            font-size: 0.85rem;
+            padding: 0.8rem;
+            background: rgba(115, 3, 192, 0.1);
+            border-radius: 8px;
+            margin-top: 0.8rem;
+            color: var(--text-secondary);
+            border-left: 3px solid #7303c0;
+        }
+
+        .add-rec-btn {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-blue);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            cursor: pointer;
+            box-shadow: var(--shadow-blue);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .add-rec-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .add-form-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .add-form {
+            background: var(--primary-color);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow-dark);
+        }
+
+        .form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-title {
+            font-size: 1.5rem;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: rgba(25, 25, 25, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .submit-btn {
+            background: var(--gradient-blue);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: var(--shadow-blue);
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .submit-btn:hover {
+            box-shadow: 0 7px 20px rgba(71, 118, 230, 0.4);
+        }
+
+        .collection-form-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .collection-form {
+            background: var(--primary-color);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow-dark);
+        }
+
+        .checkbox-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .checkbox-item label {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .checkbox-item input {
+            margin-right: 10px;
+        }
+
+        .collection-places-container {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            background: rgba(25, 25, 25, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--glass-border);
+            margin-top: auto;
+        }
+
+        /* Hide default leaflet controls */
+        .leaflet-control-zoom {
+            display: none !important;
+        }
+        
+        .leaflet-control-attribution {
+            background: rgba(15, 15, 15, 0.7) !important;
+            color: var(--text-secondary) !important;
+            font-size: 0.7rem !important;
+            padding: 3px 8px !important;
+            border-radius: 8px !important;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Enhanced Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0);
+            }
+            50% {
+                transform: translateY(-20px) rotate(5deg);
+            }
+            100% {
+                transform: translateY(0) rotate(0);
+            }
+        }
+
+        @keyframes logoFloat {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+        }
+
+        @keyframes nebulaPulse {
+            0% {
+                opacity: 0.2;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.4;
+                transform: scale(1.05);
+            }
+            100% {
+                opacity: 0.2;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+            }
+            90% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(var(--tx));
+                opacity: 0;
+            }
+        }
+
+        @keyframes lineSweep {
+            0% {
+                transform: translateY(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes slideIn {
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Marker animation */
+        .marker-animation {
+            animation: markerPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: bottom center;
+        }
+
+        @keyframes markerPop {
+            0% {
+                transform: scale(0) translateY(20px);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Media Queries */
+        @media (max-width: 992px) {
+            .map-section {
+                grid-template-columns: 1fr;
+                grid-template-rows: 60% 40%;
+            }
+            .sidebar {
+                border-left: none;
+                border-top: 1px solid var(--glass-border);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .homepage h1 {
+                font-size: 3rem;
+            }
+            .stats-container {
+                gap: 1rem;
+            }
+            .stat-box {
+                width: 150px;
+                padding: 1rem;
+            }
+            .stat-number {
+                font-size: 2.5rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .homepage h1 {
+                font-size: 2.5rem;
+            }
+            .stats-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .stat-box {
+                width: 100%;
+                max-width: 250px;
+            }
+            .filter-options {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="homepage">
+            <div class="animated-background">
+                <div class="animated-gradient"></div>
+                <div class="nebula"></div>
+                <div class="particles-container" id="particles"></div>
+                <div class="lines">
+                    <div class="line line-1"></div>
+                    <div class="line line-2"></div>
+                    <div class="line line-3"></div>
+                    <div class="line line-4"></div>
+                </div>
+                <div class="glow glow-1"></div>
+                <div class="glow glow-2"></div>
+                <div class="glow glow-3"></div>
+                <div class="shape shape-1"></div>
+                <div class="shape shape-2"></div>
+                <div class="shape shape-3"></div>
+                <div class="shape shape-4"></div>
+                <div class="shape shape-5"></div>
+                <div class="shape shape-6"></div>
+                <div class="shape shape-7"></div>
+            </div>
+            
+            <h1>
+                <div class="logo-container">
+                    <svg class="logo" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Map layers -->
+                        <path d="M50,650 L500,900 L950,650 L500,400 Z" fill="#121212" />
+                                                <path d="M100,600 L500,825 L900,600 L500,375 Z" fill="#29B6F6" />
+                        
+                        <!-- Location pin -->
+                        <g transform="translate(500, 350) scale(0.5)">
+                            <circle cx="0" cy="0" r="250" fill="white" />
+                            <circle cx="0" cy="0" r="150" fill="#29B6F6" />
+                            <path d="M-250,0 A250,250 0 1,1 250,0 A250,400 0 1,1 -250,0 Z" fill="#0069B4" />
+                        </g>
+                    </svg>
+                    <span class="title-text">MapMates</span>
+                </div>
+            </h1>
+            
+            <p>Discover extraordinary places through your friends' recommendations. Compare what your friends love with what the world recommends to find your perfect destinations.</p>
+            
+            <div class="stats-container">
+                <div class="stat-box">
+                    <div class="stat-number" data-count="250">0</div>
+                    <div class="stat-label">Places</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" data-count="120">0</div>
+                    <div class="stat-label">Friends</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" data-count="85">0</div>
+                    <div class="stat-label">Cities</div>
+                </div>
+            </div>
+            
+            <button class="begin-btn">Begin Journey</button>
+            
+            <div class="scroll-indicator">
+                <div class="scroll-text">Scroll Down</div>
+                <div class="scroll-arrow"></div>
+            </div>
+        </div>
+        
+        <div class="map-section">
+            <div id="map-container">
+                <div id="map"></div>
+                
+                <div class="controls">
+                    <div class="control-btn" id="zoom-in" title="Zoom In">+</div>
+                    <div class="control-btn" id="zoom-out" title="Zoom Out">-</div>
+                    <div class="control-btn" id="center-map" title="Center Map">⌖</div>
+                </div>
+                
+                <button class="add-rec-btn" title="Add Recommendation">+</button>
+            </div>
+            
+            <div class="sidebar">
+                <div class="tabs">
+                    <div class="tab active" data-tab="recommendations">Recommendations</div>
+                    <div class="tab" data-tab="collections">Collections</div>
+                    <div class="tab" data-tab="for-you">For You</div>
+                </div>
+                
+                <div class="tab-content active" id="recommendations-tab">
+                    <div class="filter-container">
+                        <h3 class="filter-title">Filter</h3>
+                        <div class="filter-options">
+                            <div class="filter-chip active" data-filter="category">All Categories</div>
+                            <div class="filter-chip" data-filter="restaurant">Restaurants</div>
+                            <div class="filter-chip" data-filter="cafe">Cafés</div>
+                            <div class="filter-chip" data-filter="attraction">Attractions</div>
+                            <div class="filter-chip" data-filter="park">Parks</div>
+                        </div>
+                        <div class="filter-options">
+                            <div class="filter-chip active" data-filter="source">All Sources</div>
+                            <div class="filter-chip" data-filter="friends">Friends</div>
+                            <div class="filter-chip" data-filter="personal">Personal</div>
+                        </div>
+                        <div class="filter-options">
+                            <div class="filter-chip active" data-filter="rating">All Ratings</div>
+                            <div class="filter-chip" data-filter="4plus">4+ Stars</div>
+                            <div class="filter-chip" data-filter="5stars">5 Stars</div>
+                        </div>
+                    </div>
+                    
+                    <div class="recommendations-container" id="recommendations-list">
+                        <!-- Recommendation cards will be generated here -->
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="collections-tab">
+                    <div class="collection-list">
+                        <div class="collection-item">
+                            <div class="collection-title">Weekend Getaways</div>
+                            <div class="collection-count">6 places</div>
+                        </div>
+                        <div class="collection-item">
+                            <div class="collection-title">Date Night Spots</div>
+                            <div class="collection-count">4 places</div>
+                        </div>
+                        <div class="collection-item">
+                            <div class="collection-title">Food Adventures</div>
+                            <div class="collection-count">8 places</div>
+                        </div>
+                        <div class="collection-item">
+                            <div class="collection-title">Hidden Gems</div>
+                            <div class="collection-count">5 places</div>
+                        </div>
+                    </div>
+                    <a href="#" class="create-collection-btn" id="create-collection">Create Collection</a>
+                </div>
+                
+                <div class="tab-content" id="for-you-tab">
+                    <div class="ai-recommendations">
+                        <div class="ai-rec-card">
+                            <span class="ai-badge">AI Recommended</span>
+                            <h4 class="rec-title">Waterfront Restaurant</h4>
+                            <span class="rec-category">Restaurant</span>
+                            <div class="rec-rating">★★★★★</div>
+                            <p class="rec-details">Contemporary cuisine with spectacular water views.</p>
+                            <div class="ai-reason">Based on your preference for scenic views and high-rated dining experiences.</div>
+                        </div>
+                        <div class="ai-rec-card">
+                            <span class="ai-badge">AI Recommended</span>
+                            <h4 class="rec-title">City Art Gallery</h4>
+                            <span class="rec-category">Attraction</span>
+                            <div class="rec-rating">★★★★½</div>
+                            <p class="rec-details">Modern art gallery featuring local and international artists.</p>
+                            <div class="ai-reason">Recommended because you enjoyed similar cultural attractions like the Art Museum.</div>
+                        </div>
+                        <div class="ai-rec-card">
+                            <span class="ai-badge">AI Recommended</span>
+                            <h4 class="rec-title">Lakeside Park</h4>
+                            <span class="rec-category">Park</span>
+                            <div class="rec-rating">★★★★★</div>
+                            <p class="rec-details">Serene park with walking trails and beautiful lake views.</p>
+                            <div class="ai-reason">Matches your interest in outdoor spaces and nature as shown by your Central Park recommendation.</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    Created with ❤️ by Devraj
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="add-form-container">
+        <div class="add-form">
+            <div class="form-header">
+                <h3 class="form-title">Add Recommendation</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Place Name</label>
+                <input type="text" class="form-input" id="place-name" placeholder="Enter place name">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="place-category">
+                    <option value="restaurant">Restaurant</option>
+                    <option value="cafe">Café</option>
+                    <option value="attraction">Attraction</option>
+                    <option value="park">Park</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Rating (1-5)</label>
+                <input type="number" min="1" max="5" class="form-input" id="place-rating" placeholder="Enter rating">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Location</label>
+                <input type="text" class="form-input" id="place-location" placeholder="Drag marker on map or enter address">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" id="place-description" placeholder="Why do you recommend this place?"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Source</label>
+                <select class="form-select" id="place-source">
+                    <option value="personal">Personal</option>
+                    <option value="friend">Friend</option>
+                </select>
+            </div>
+            <button class="submit-btn">Add Recommendation</button>
+        </div>
+    </div>
+    
+    <div class="collection-form-container">
+        <div class="collection-form">
+            <div class="form-header">
+                <h3 class="form-title">Create Collection</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Collection Name</label>
+                <input type="text" class="form-input" id="collection-name" placeholder="Enter collection name">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" id="collection-description" placeholder="What's this collection about?"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Select Places</label>
+                <div id="collection-places" class="collection-places-container">
+                    <!-- Places checkboxes will be generated here -->
+                </div>
+            </div>
+            <button class="submit-btn" id="create-collection-submit">Create Collection</button>
+        </div>
+    </div>
+    
+    <script>
+        // Sample data for recommendations
+        const recommendations = [
+            {
+                id: 1,
+                name: "The Riverside Café",
+                category: "cafe",
+                rating: 4.8,
+                lat: 40.7128,
+                lng: -74.006,
+                description: "Beautiful café with riverside views and excellent pastries.",
+                source: "friend",
+                friend: "Alex",
+                tags: ["scenic", "coffee", "dessert"]
+            },
+            {
+                id: 2,
+                name: "Central Park",
+                category: "park",
+                rating: 5,
+                lat: 40.7829,
+                lng: -73.9654,
+                description: "A must-visit green space in the heart of the city.",
+                source: "personal",
+                tags: ["outdoors", "nature", "walking"]
+            },
+            {
+                id: 3,
+                name: "Art Museum",
+                category: "attraction",
+                rating: 4.6,
+                lat: 40.7794,
+                lng: -73.9632,
+                description: "Impressive collection of contemporary art pieces.",
+                source: "friend",
+                friend: "Jamie",
+                tags: ["culture", "indoor", "art"]
+            },
+            {
+                id: 4,
+                name: "Gourmet Bistro",
+                category: "restaurant",
+                rating: 4.9,
+                lat: 40.7213,
+                lng: -74.0123,
+                description: "Exceptional fine dining experience with innovative cuisine.",
+                source: "friend",
+                friend: "Taylor",
+                tags: ["dinner", "fine dining", "expensive"]
+            },
+            {
+                id: 5,
+                name: "Historic Theater",
+                category: "attraction",
+                rating: 4.7,
+                lat: 40.7589,
+                lng: -73.9851,
+                description: "Beautiful architecture and amazing performances.",
+                source: "personal",
+                tags: ["culture", "entertainment", "architecture"]
+            },
+            {
+                id: 6,
+                name: "Harbor View Restaurant",
+                category: "restaurant",
+                rating: 4.5,
+                lat: 40.7023,
+                lng: -74.0159,
+                description: "Seafood restaurant with stunning harbor views and fresh catches daily.",
+                source: "personal",
+                tags: ["seafood", "views", "dinner"]
+            },
+            {
+                id: 7,
+                name: "City Botanic Gardens",
+                category: "park",
+                rating: 4.8,
+                lat: 40.7712,
+                lng: -73.9665,
+                description: "Beautiful gardens with diverse plant collections and peaceful walking paths.",
+                source: "friend",
+                friend: "Morgan",
+                tags: ["nature", "peaceful", "walking"]
+            },
+            {
+                id: 8,
+                name: "Artisan Coffee House",
+                category: "cafe",
+                rating: 4.7,
+                lat: 40.7281,
+                lng: -73.9893,
+                description: "Specialty coffee shop with award-winning baristas and homemade pastries.",
+                source: "friend",
+                friend: "Jordan",
+                tags: ["coffee", "breakfast", "pastries"]
+            }
+        ];
+        
+        // Collections data
+        const collections = [
+            {
+                id: 1,
+                name: "Weekend Getaways",
+                description: "Perfect places to visit for a weekend escape",
+                places: [2, 5, 7]
+            },
+            {
+                id: 2,
+                name: "Date Night Spots",
+                description: "Romantic places for a special evening",
+                places: [1, 4, 6]
+            },
+            {
+                id: 3,
+                name: "Food Adventures",
+                description: "Must-try eateries for food lovers",
+                places: [1, 4, 6, 8]
+            },
+            {
+                id: 4,
+                name: "Hidden Gems",
+                description: "Lesser-known places with amazing experiences",
+                places: [3, 8, 7, 5, 6]
+            }
+        ];
+        
+        // AI recommendations with reasoning
+        const aiRecommendations = [
+            {
+                id: 101,
+                name: "Waterfront Restaurant",
+                category: "restaurant",
+                rating: 5,
+                lat: 40.7061,
+                lng: -74.0088,
+                description: "Contemporary cuisine with spectacular water views.",
+                reason: "Based on your preference for scenic views and high-rated dining experiences.",
+                tags: ["scenic", "dinner", "upscale"]
+            },
+            {
+                id: 102,
+                name: "City Art Gallery",
+                category: "attraction",
+                rating: 4.5,
+                lat: 40.7725,
+                lng: -73.9771,
+                description: "Modern art gallery featuring local and international artists.",
+                reason: "Recommended because you enjoyed similar cultural attractions like the Art Museum.",
+                tags: ["art", "culture", "indoor"]
+            },
+            {
+                id: 103,
+                name: "Lakeside Park",
+                category: "park",
+                rating: 5,
+                lat: 40.7723,
+                lng: -73.9485,
+                description: "Serene park with walking trails and beautiful lake views.",
+                reason: "Matches your interest in outdoor spaces and nature as shown by your Central Park recommendation.",
+                tags: ["outdoors", "nature", "peaceful"]
+            }
+        ];
+        
+        let map;
+        let markers = [];
+        let currentFilters = {
+            category: 'all',
+            source: 'all',
+            rating: 'all'
+        };
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            createParticles();
+            animateStatCounters();
+            addEventListeners();
+            updateMap();
+            updateRecommendationsList();
+            populateCollectionPlaces();
+        });
+        
+        // Create animated particles for background
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const size = Math.random() * 3 + 1;
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // Random starting position
+                const x = Math.random() * 100;
+                const y = Math.random() * 100 + 100; // Start below viewport
+                
+                // Random horizontal drift
+                const tx = (Math.random() - 0.5) * 200;
+                
+                // Random duration
+                const duration = Math.random() * 30 + 15;
+                
+                // Set particle styles
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.left = x + 'vw';
+                particle.style.top = y + 'vh';
+                particle.style.opacity = Math.random() * 0.5 + 0.1;
+                particle.style.setProperty('--tx', tx + 'px');
+                particle.style.animationDuration = duration + 's';
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                
+                container.appendChild(particle);
+            }
+        }
+        
+        // Initialize map
+        function initMap() {
+            map = L.map('map', {
+                zoomControl: false, // Disable default zoom controls
+                attributionControl: true
+            }).setView([40.7128, -74.006], 12);
+            
+            // Add a custom dark themed tile layer
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+            
+            // Add custom styling to map container for depth effect
+            const mapContainer = document.getElementById('map');
+            setTimeout(() => {
+                mapContainer.style.boxShadow = 'inset 0 0 30px rgba(0,0,0,0.5)';
+                mapContainer.style.transition = 'box-shadow 1s ease';
+            }, 1000);
+        }
+        
+        // Add event listeners
+        function addEventListeners() {
+            // Begin Journey button click
+            document.querySelector('.begin-btn').addEventListener('click', function() {
+                document.querySelector('.map-section').scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            // Scroll indicator click
+            document.querySelector('.scroll-indicator').addEventListener('click', function() {
+                document.querySelector('.map-section').scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            // Tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Remove active class from all tabs
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    this.classList.add('active');
+                    
+                    // Hide all tab content
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // Show active tab content
+                    const tabName = this.getAttribute('data-tab');
+                    document.getElementById(`${tabName}-tab`).classList.add('active');
+                });
+            });
+            
+            // Filter chips click
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.addEventListener('click', function() {
+                    const filter = this.getAttribute('data-filter');
+                    
+                    // Toggle active class for chips in the same group
+                    const parent = this.parentElement;
+                    parent.querySelectorAll('.filter-chip').forEach(c => {
+                        c.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // Set current filters
+                    if (parent.querySelector('[data-filter="category"]') !== null) {
+                        currentFilters.category = filter === 'category' ? 'all' : filter;
+                    } else if (parent.querySelector('[data-filter="source"]') !== null) {
+                        currentFilters.source = filter === 'source' ? 'all' : filter;
+                    } else if (parent.querySelector('[data-filter="rating"]') !== null) {
+                        currentFilters.rating = filter === 'rating' ? 'all' : filter;
+                    }
+                    
+                    // Update map and recommendations list
+                    updateMap();
+                    updateRecommendationsList();
+                });
+            });
+            
+            // Add recommendation button click
+            document.querySelector('.add-rec-btn').addEventListener('click', function() {
+                const formContainer = document.querySelector('.add-form-container');
+                formContainer.style.display = 'flex';
+                setTimeout(() => {
+                    formContainer.style.opacity = '1';
+                }, 10);
+            });
+            
+            // Close form buttons click
+            document.querySelectorAll('.close-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const formContainer = this.closest('.add-form-container, .collection-form-container');
+                    formContainer.style.opacity = '0';
+                    setTimeout(() => {
+                        formContainer.style.display = 'none';
+                    }, 300);
+                });
+            });
+            
+            // Submit form button click
+            document.querySelector('.submit-btn').addEventListener('click', function() {
+                const name = document.getElementById('place-name').value;
+                const category = document.getElementById('place-category').value;
+                const rating = parseFloat(document.getElementById('place-rating').value);
+                const description = document.getElementById('place-description').value;
+                const source = document.getElementById('place-source').value;
+                const location = document.getElementById('place-location').value;
+                
+                // Simple validation
+                if (!name || !rating || !description) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+                
+                // Get coordinates from map center for demo (in a real app, would use geocoding)
+                const center = map.getCenter();
+                
+                // Create new recommendation
+                const newRec = {
+                    id: recommendations.length + 1,
+                    name: name,
+                    category: category,
+                    rating: rating,
+                    lat: center.lat,
+                    lng: center.lng,
+                    description: description,
+                    source: source,
+                    tags: [category]
+                };
+                
+                // Add to recommendations array
+                recommendations.push(newRec);
+                
+                // Update map and list
+                updateMap();
+                updateRecommendationsList();
+                populateCollectionPlaces();
+                
+                // Close form
+                document.querySelector('.close-btn').click();
+                
+                // Clear form
+                document.getElementById('place-name').value = '';
+                document.getElementById('place-rating').value = '';
+                document.getElementById('place-description').value = '';
+                document.getElementById('place-location').value = '';
+            });
+            
+            // Create collection button click
+            document.getElementById('create-collection').addEventListener('click', function() {
+                const formContainer = document.querySelector('.collection-form-container');
+                formContainer.style.display = 'flex';
+                setTimeout(() => {
+                    formContainer.style.opacity = '1';
+                }, 10);
+            });
+            
+            // Create collection submit button click
+            document.getElementById('create-collection-submit').addEventListener('click', function() {
+                const name = document.getElementById('collection-name').value;
+                const description = document.getElementById('collection-description').value;
+                
+                // Simple validation
+                if (!name) {
+                    alert('Please enter a collection name');
+                    return;
+                }
+                
+                // Get selected places
+                const selectedPlaces = [];
+                document.querySelectorAll('.collection-place-checkbox:checked').forEach(checkbox => {
+                    selectedPlaces.push(parseInt(checkbox.value));
+                });
+                
+                if (selectedPlaces.length === 0) {
+                    alert('Please select at least one place');
+                    return;
+                }
+                
+                // Create new collection
+                const newCollection = {
+                    id: collections.length + 1,
+                    name: name,
+                    description: description,
+                    places: selectedPlaces
+                };
+                
+                // Add to collections array
+                collections.push(newCollection);
+                
+                // Add new collection to the list
+                const collectionItem = document.createElement('div');
+                collectionItem.className = 'collection-item';
+                collectionItem.innerHTML = `
+                    <div class="collection-title">${name}</div>
+                    <div class="collection-count">${selectedPlaces.length} places</div>
+                `;
+                
+                // Add click event to new collection
+                collectionItem.addEventListener('click', function() {
+                    showCollectionOnMap(newCollection);
+                    document.querySelector('.tab[data-tab="recommendations"]').click();
+                });
+                
+                document.querySelector('.collection-list').appendChild(collectionItem);
+                
+                // Close form
+                document.querySelector('.collection-form-container .close-btn').click();
+                
+                // Clear form
+                document.getElementById('collection-name').value = '';
+                document.getElementById('collection-description').value = '';
+                document.querySelectorAll('.collection-place-checkbox').forEach(cb => {
+                    cb.checked = false;
+                });
+            });
+            
+            // Map control buttons
+            document.getElementById('zoom-in').addEventListener('click', function() {
+                map.zoomIn(1);
+                pulseMapControls(this);
+            });
+            
+            document.getElementById('zoom-out').addEventListener('click', function() {
+                map.zoomOut(1);
+                pulseMapControls(this);
+            });
+            
+            document.getElementById('center-map').addEventListener('click', function() {
+                if (markers.length > 0) {
+                    const bounds = L.featureGroup(markers).getBounds();
+                    map.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 1 });
+                }
+                pulseMapControls(this);
+            });
+            
+            // Make collection items clickable
+            document.querySelectorAll('.collection-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const collectionName = this.querySelector('.collection-title').textContent;
+                    const collection = collections.find(c => c.name === collectionName);
+                    
+                    if (collection) {
+                        // Filter map to show only places in this collection
+                        showCollectionOnMap(collection);
+                        
+                        // Switch to recommendations tab to see the filtered places
+                        document.querySelector('.tab[data-tab="recommendations"]').click();
+                    }
+                });
+            });
+        }
+        
+        // Visual feedback for map controls
+        function pulseMapControls(element) {
+            element.classList.add('pulse-effect');
+            setTimeout(() => {
+                element.classList.remove('pulse-effect');
+            }, 300);
+        }
+        
+        // Show collection on map
+        function showCollectionOnMap(collection) {
+            // Filter to show only places in this collection
+            const collectionPlaceIds = collection.places;
+            
+            // Clear existing markers
+            markers.forEach(marker => {
+                map.removeLayer(marker);
+            });
+            markers = [];
+            
+            // Add markers for places in this collection
+            const collectionRecs = recommendations.filter(rec => collectionPlaceIds.includes(rec.id));
+            
+            collectionRecs.forEach((rec, index) => {
+                setTimeout(() => {
+                    addMarkerWithAnimation(rec);
+                }, index * 100);
+            });
+            
+            // Fit bounds to markers
+            if (collectionRecs.length > 0) {
+                setTimeout(() => {
+                    const bounds = L.featureGroup(markers).getBounds();
+                    map.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 1.2 });
+                }, collectionRecs.length * 100 + 100);
+            }
+            
+            // Update recommendation list
+            updateRecommendationsList(collectionRecs);
+        }
+        
+        // Update map with filtered recommendations
+        function updateMap() {
+            // Clear existing markers
+            markers.forEach(marker => {
+                map.removeLayer(marker);
+            });
+            markers = [];
+            
+            // Filter recommendations
+            const filteredRecs = filterRecommendations();
+            
+            // Add markers
+            filteredRecs.forEach((rec, index) => {
+                setTimeout(() => {
+                    addMarkerWithAnimation(rec);
+                }, index * 100); // Stagger markers for animation effect
+            });
+            
+            // Fit bounds to markers
+            if (markers.length > 0) {
+                const bounds = L.featureGroup(markers).getBounds();
+                map.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 1.2 });
+            }
+        }
+        
+        // Add a marker with animation
+        function addMarkerWithAnimation(rec) {
+            const markerColor = rec.source === 'friend' ? '#4776E6' : '#1a2980';
+            
+            // Custom marker icon
+            const icon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="background-color: ${markerColor}; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            
+            // Create marker
+            const marker = L.marker([rec.lat, rec.lng], { icon: icon }).addTo(map);
+            
+            // Add popup
+            marker.bindPopup(`
+                <div style="font-family: 'Montserrat', sans-serif;">
+                    <h3 style="margin: 0 0 5px; font-size: 14px;">${rec.name}</h3>
+                    <p style="margin: 0 0 5px; font-size: 12px;">
+                        <span style="color: #FFD700;">${'★'.repeat(Math.floor(rec.rating))}${rec.rating % 1 >= 0.5 ? '½' : ''}</span>
+                        <span style="color: #aaa;">${rec.rating}/5</span>
+                    </p>
+                    <p style="margin: 0; font-size: 12px; font-style: italic; color: #888;">
+                        ${rec.source === 'friend' ? `Recommended by ${rec.friend || 'a friend'}` : 'Personal recommendation'}
+                    </p>
+                </div>
+            `);
+            
+            // Store reference to recommendation
+            marker.recommendation = rec;
+            
+            // Add animation class to marker
+            marker.on('add', function() {
+                const markerEl = marker.getElement();
+                if (markerEl) {
+                    markerEl.classList.add('marker-animation');
+                }
+            });
+            
+            // Save marker for later reference
+            markers.push(marker);
+            
+            // Initial click handler (open popup by default)
+            marker.on('click', function() {
+                this.openPopup();
+            });
+        }
+        
+        // Update recommendations list with filtered recommendations
+        function updateRecommendationsList(forcedRecs = null) {
+            const container = document.getElementById('recommendations-list');
+            container.innerHTML = '';
+            
+            // Use provided recommendations or filter based on current filters
+            const filteredRecs = forcedRecs || filterRecommendations();
+            
+            // Add recommendation cards
+            filteredRecs.forEach((rec, index) => {
+                const card = document.createElement('div');
+                card.className = 'rec-card';
+                card.dataset.id = rec.id;
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                card.innerHTML = `
+                    <div class="rec-header">
+                        <div>
+                            <h4 class="rec-title">${rec.name}</h4>
+                            <span class="rec-category">${rec.category}</span>
+                        </div>
+                        <div class="rec-rating">
+                            ${'★'.repeat(Math.floor(rec.rating))}${rec.rating % 1 >= 0.5 ? '½' : ''}
+                        </div>
+                    </div>
+                    <p class="rec-details">${rec.description}</p>
+                    <p class="rec-source">
+                        ${rec.source === 'friend' ? `Recommended by ${rec.friend || 'a friend'}` : 'Personal recommendation'}
+                    </p>
+                `;
+                
+                container.appendChild(card);
+                
+                // Add click event to center map on this recommendation
+                card.addEventListener('click', function() {
+                    map.setView([rec.lat, rec.lng], 15, { animate: true, duration: 1 });
+                    
+                    // Find the marker and open its popup
+                    markers.forEach(marker => {
+                        if (marker.recommendation && marker.recommendation.id === rec.id) {
+                            marker.openPopup();
+                        }
+                    });
+                    
+                    // Highlight this card and remove highlight from others
+                    document.querySelectorAll('.rec-card').forEach(c => {
+                        c.classList.remove('selected');
+                    });
+                    card.classList.add('selected');
+                });
+                
+                // Animate card appearance with delay based on index
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+            
+            // Show empty message if no results
+            if (filteredRecs.length === 0) {
+                const emptyMessage = document.createElement('p');
+                emptyMessage.style.textAlign = 'center';
+                emptyMessage.style.color = 'var(--text-secondary)';
+                emptyMessage.style.padding = '2rem 0';
+                emptyMessage.textContent = 'No recommendations match your filters';
+                container.appendChild(emptyMessage);
+            }
+        }
+        
+        // Filter recommendations based on current filters
+        function filterRecommendations() {
+            return recommendations.filter(rec => {
+                // Filter by category
+                if (currentFilters.category !== 'all' && rec.category !== currentFilters.category) {
+                    return false;
+                }
+                
+                // Filter by source
+                if (currentFilters.source === 'friends' && rec.source !== 'friend') {
+                    return false;
+                }
+                if (currentFilters.source === 'personal' && rec.source !== 'personal') {
+                    return false;
+                }
+                
+                // Filter by rating
+                if (currentFilters.rating === '4plus' && rec.rating < 4) {
+                    return false;
+                }
+                if (currentFilters.rating === '5stars' && rec.rating < 5) {
+                    return false;
+                }
+                
+                return true;
+            });
+        }
+        
+        // Populate collection places checkboxes
+        function populateCollectionPlaces() {
+            const container = document.getElementById('collection-places');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            recommendations.forEach(rec => {
+                const checkboxItem = document.createElement('div');
+                checkboxItem.className = 'checkbox-item';
+                checkboxItem.innerHTML = `
+                    <label>
+                        <input type="checkbox" class="collection-place-checkbox" value="${rec.id}">
+                        ${rec.name} (${rec.category})
+                    </label>
+                `;
+                container.appendChild(checkboxItem);
+            });
+        }
+        
+        // Animate stat counters
+        function animateStatCounters() {
+            const counters = document.querySelectorAll('.stat-number');
+            
+            counters.forEach(counter => {
+                const target = parseInt(counter.getAttribute('data-count'));
+                let count = 0;
+                const duration = 2000; // 2 seconds
+                const frameDuration = 1000 / 60; // 60fps
+                const totalFrames = Math.round(duration / frameDuration);
+                const increment = target / totalFrames;
+                
+                const timer = setInterval(() => {
+                    count += increment;
+                    
+                    if (count >= target) {
+                        counter.textContent = target;
+                        clearInterval(timer);
+                    } else {
+                        counter.textContent = Math.floor(count);
+                    }
+                }, frameDuration);
+            });
+        }
+    </script>
+</body>
+</html> 
